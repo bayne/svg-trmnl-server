@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="480" viewBox="0 0 800 480" version="1.1" id="svg5"
+     xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        {% macro dither() %}
+            <pattern
+                    patternUnits="userSpaceOnUse"
+                    width="4"
+                    height="4"
+                    id="dither-6">
+                <rect style="fill:#ffffff;stroke:none" width="4" height="4"
+                      x="0"
+                      y="0"/>
+                <rect style="fill:#000000;stroke:none" width="1" height="1"
+                      x="0"
+                      y="2"/>
+                <rect style="fill:#000000;stroke:none" width="1" height="1"
+                      x="2"
+                      y="0"/>
+            </pattern>
+        {% endmacro %}
+        {% macro sm_text(icon, primary, secondary) %}
+            <svg x="0" y="0" width="248" height="50" viewBox="0 0 248 50"
+                 class="sm-text" id="sm-text-t"
+                 xmlns="http://www.w3.org/2000/svg">
+                <style>
+                    svg.sm-text rect.sm-text-block {
+                        rx: 3px;
+                        ry: 3px;
+                        width: 9px;
+                        height: 49px;
+                        fill: url(#dither-6);
+                        fill-opacity: 1;
+                        fill-rule: nonzero;
+                        stroke: none;
+                        stroke-width: 0;
+                        stroke-dasharray: none;
+                        paint-order: stroke markers fill;
+                    }
+
+                    svg.sm-text text.icon {
+                        font-size: 37.3333px;
+                    }
+
+                    svg.sm-text text.primary {
+                        font-size: 26.6667px;
+                    }
+
+                    svg.sm-text text.secondary {
+                        font-size: 16px;
+                    }
+                </style>
+                <rect class="sm-text-block" x="0" y="0" width="10"
+                      height="100%"/>
+                <g transform="translate(20 0)">
+                    <text class="icon" x="0" y="40">{{ icon }}</text>
+                    <g transform="translate(40 0)">
+                        <text class="primary" x="0" y="30">{{ primary }}</text>
+                        <text class="secondary" x="0" y="45">{{ secondary }}</text>
+                    </g>
+                </g>
+            </svg>
+        {% endmacro %}
+        {% macro lg_text() %}
+            <svg x="0" y="0" width="248" height="181" viewBox="0 0 248 181"
+                 class="lg-text" id="lg-text-t">
+                <style>
+                    svg.lg-text rect.lg-text-handle {
+                        rx: 3px;
+                        ry: 3px;
+                        fill: url(#dither-6);
+                    }
+
+                    svg.lg-text text.icon {
+                        font-size: 37.3333px;
+                    }
+
+                    svg.lg-text text.primary {
+                        font-size: 78pt;
+                        transform: translateY(60px);
+                        transform: translate(0 60);
+                    }
+
+                    svg.lg-text text.secondary {
+                        font-size: 16pt;
+                    }
+
+                    svg.lg-text text.ternary {
+                        font-size: 16pt;
+                    }
+                </style>
+                <rect class="lg-text-handle" x="0" y="0" width="10"
+                      height="100%"/>
+                <g transform="translate(20 0)">
+                    <text class="primary" x="0" y="30">54°</text>
+                    <g transform="translate(0 70)">
+                        <text class="secondary" x="0" y="45">Feels Like
+                            something
+                        </text>
+                    </g>
+                </g>
+                <rect class="guidelines" x="0" y="0" height="100%"
+                      width="100%"/>
+            </svg>
+        {% endmacro %}
+        {% macro lg_icon() %}
+            <svg x="0" y="0" width="248" viewBox="0 0 248 50" height="181"
+                 class="lg-icon" id="lg-icon-t">
+                <text x="40" y="110" class="icon" font-size="170">&#xe81a;
+                </text>
+            </svg>
+        {% endmacro %}
+    </defs>
+</svg>

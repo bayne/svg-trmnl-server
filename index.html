@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-Refreshing SVG Viewer</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        object {
+            width: 80%;
+            height: 80%;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+<img id="output" src="output.png"  alt=""/>
+
+<script>
+    const output = document.getElementById('output');
+
+    // Function to refresh the SVG
+    const refreshImage = () => {
+        // Bust the cache by appending a timestamp
+        const timestamp = new Date().getTime();
+        output.setAttribute('src', 'output.png?' + timestamp);
+    };
+
+    // Implement a basic polling mechanism to reload the SVG every few seconds
+    setInterval(refreshImage, 200); // Adjust the interval as needed (3000 ms = 3 seconds)
+</script>
+</body>
+</html>
