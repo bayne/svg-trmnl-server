@@ -1,5 +1,5 @@
 [package]
-name = "trmnl-server-rs"
+name = "trmnl-server"
 version = "0.1.0"
 edition = "2024"
 
@@ -8,14 +8,20 @@ resvg = "0.45.1"
 tiny-skia = "0.11.4"
 serde = { version = "1.0", features = ["derive"] }
 minijinja = "2.9.0"
-notify = "8.0.0"
 anyhow = "1.0.98"
 axum = { version ="0.8.3", features = ["default", "macros"] }
 tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tower-http = { version = "0.6.2", features = ["trace"] }
-uuid = { version = "1.16.0", features = ["v4"] }
 tracing = "0.1.41"
 tower = "0.5.2"
-tinybmp = "0.6.0"
-embedded-graphics = "0.8.1"
+serde_json = "1.0.140"
+config = "0.15.11"
+chrono = "0.4.41"
+sha2 = "0.10.9"
+hex = "0.4.3"
+url = "2.5.4"
+
+[dev-dependencies]
+axum-test = "17.3.0"
+tempfile = "3.20.0"

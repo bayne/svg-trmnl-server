@@ -1,0 +1,9 @@
+setup_image_path = "src/display/blank.bmp"
+display_image_timeout = 60
+base_url = "https://example.com"
+
+[[devices]]
+mac_address = "DE:AD:BE:EF:B0:0B"
+friendly_id = "trmnl-1"
+api_key = "fakeapikeyisfake"
+setup_expiry = "2000-01-01T00:00:00Z"

@@ -1,0 +1,271 @@
+openapi: 3.1.0
+info:
+  title: Trmnl Server
+  description: Trmnl Server
+  version: 1.0.0
+servers:
+  - url: 'https'
+paths:
+  /api/display:
+    get:
+      description: Get display
+      parameters:
+        - $ref: '#/components/parameters/ID'
+        - $ref: '#/components/parameters/AccessToken'
+        - $ref: '#/components/parameters/RefreshRate'
+        - $ref: '#/components/parameters/BatteryVoltage'
+        - $ref: '#/components/parameters/FirmwareVersion'
+        - $ref: '#/components/parameters/RSSI'
+        - $ref: '#/components/parameters/DisplayWidth'
+        - $ref: '#/components/parameters/DisplayHeight'
+        - $ref: '#/components/parameters/SpecialFunction'
+      responses:
+        200:
+          description: Successfully generated display
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiDisplayResponse"
+
+  /api/setup/:
+    get:
+      description: Setup device with server
+      parameters:
+        - $ref: '#/components/parameters/FirmwareVersion'
+        - $ref: '#/components/parameters/ID'
+      responses:
+        200:
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiSetupResponse"
+  /api/log:
+    post:
+      description: Capture device logs
+      parameters:
+        - $ref: '#/components/parameters/AccessToken'
+        - $ref: '#/components/parameters/ID'
+      responses:
+        204:
+          description: Successfully capture logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogInput"
+
+components:
+  schemas:
+    LogInput:
+      type: object
+      required:
+        - log
+      properties:
+        log:
+          type: object
+          required:
+            - logs_array
+          properties:
+            logs_array:
+              type: array
+              items:
+                type: object
+                properties:
+                  creation_timestamp:
+                    type: string
+                    format: date-time
+                    description: Timestamp of when the log was created.
+                  device_status_stamp:
+                    type: object
+                    properties:
+                      wifi_rssi_level:
+                        type: integer
+                        description: WiFi RSSI level.
+                      wifi_status:
+                        type: string
+                        description: WiFi connection status.
+                      refresh_rate:
+                        type: integer
+                        description: Device's refresh rate in seconds.
+                      time_since_last_sleep_start:
+                        type: integer
+                        description: Time in seconds since the device last entered sleep mode.
+                      current_fw_version:
+                        type: string
+                        description: Current firmware version of the device.
+                      special_function:
+                        type: string
+                        description: Active special function of the device.
+                      battery_voltage:
+                        type: number
+                        format: float
+                        description: Battery voltage of the device.
+                      wakeup_reason:
+                        type: string
+                        description: Reason for the device's last wake-up.
+                      free_heap_size:
+                        type: integer
+                        description: Available free heap memory in bytes.
+                      max_alloc_size:
+                        type: integer
+                        description: Maximum allocatable memory in bytes.
+                  log_id:
+                    type: integer
+                    description: Unique identifier for the log entry.
+                  log_message:
+                    type: string
+                    description: Log message.
+                  log_codeline:
+                    type: integer
+                    description: Line number in the source file where the log was generated.
+                  log_sourcefile:
+                    type: string
+                    description: Name of the source file where the log was generated.
+                  additional_info:
+                    type: object
+                    properties:
+                      filename_current:
+                        type: string
+                        description: Current filename stored in preferences.
+                      filename_new:
+                        type: string
+                        description: New filename, if provided.
+                      retry_attempt:
+                        type: integer
+                        description: Count of API retry attempts, included if a retry occurred.
+
+    ApiSetupResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: uint16
+        api_key:
+          type: string
+        friendly_id:
+          type: string
+        image_url:
+          type: string
+        message:
+          type: string
+      required:
+        - status
+
+    ApiDisplayResponse:
+      type: object
+      required:
+        - status
+        - refresh_rate
+        - special_function
+      properties:
+        error_detail:
+          type: string
+        status:
+          type: integer
+          format: uint64
+        image_url:
+          type: string
+          format: url
+        image_url_timeout:
+          type: integer
+          format: uint32
+        filename:
+          anyOf:
+            - type: string
+              description: Filename of the image
+            - type: string
+              description: Special filename to clear the screen
+              enum:
+                - "empty_state"
+          type: string
+        update_firmware:
+          type: boolean
+        firmware_url:
+          type: string
+        refresh_rate:
+          type: integer
+          format: uint64
+        reset_firmware:
+          type: boolean
+        special_function:
+          $ref: '#/components/schemas/SpecialFunction'
+        action:
+          $ref: '#/components/schemas/SpecialFunction'
+
+    SpecialFunction:
+      type: string
+      enum:
+        - none
+        - identify
+        - sleep
+        - add_wifi
+        - restart_playlist
+        - rewind
+        - send_to_me
+
+  parameters:
+    ID:
+      name: ID
+      in: header
+      description: Unique MAC address identifier for the device
+      required: true
+      schema:
+        type: string
+    AccessToken:
+      name: Access-Token
+      in: header
+      description: Token used for authentication
+      required: true
+      schema:
+        type: string
+    RefreshRate:
+      name: Refresh-Rate
+      in: header
+      description: How frequently the display should refresh (in seconds)
+      required: true
+      schema:
+        type: string
+    BatteryVoltage:
+      name: Battery-Voltage
+      in: header
+      description: Current battery voltage of the device
+      required: true
+      schema:
+        type: string
+    FirmwareVersion:
+      name: FW-Version
+      in: header
+      description: Firmware version running on the device
+      required: true
+      schema:
+        type: string
+    RSSI:
+      name: RSSI
+      in: header
+      description: Received Signal Strength Indicator (WiFi Signal Strength)
+      required: true
+      schema:
+        type: string
+    DisplayWidth:
+      name: Width
+      in: header
+      description: Width of the display
+      required: true
+      schema:
+        type: string
+    DisplayHeight:
+      name: Height
+      in: header
+      description: Height of the display
+      required: true
+      schema:
+        type: string
+    SpecialFunction:
+      name: special_function
+      in: header
+      description: Indicates whether a special function is enabled
+      required: false
+      schema:
+        type: string
+        enum:
+          - true
