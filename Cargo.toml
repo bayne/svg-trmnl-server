@@ -9,7 +9,7 @@ tiny-skia = "0.11.4"
 serde = { version = "1.0", features = ["derive"] }
 minijinja = "2.9.0"
 anyhow = "1.0.98"
-axum = { version ="0.8.3", features = ["default", "macros"] }
+axum = { version ="0.8.3", features = ["default", "macros", "ws"] }
 tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tower-http = { version = "0.6.2", features = ["trace"] }
@@ -21,6 +21,7 @@ chrono = "0.4.41"
 sha2 = "0.10.9"
 hex = "0.4.3"
 url = "2.5.4"
+base64 = "0.22.1"
 
 [dev-dependencies]
 axum-test = "17.3.0"

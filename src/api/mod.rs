@@ -1,5 +1,6 @@
-use crate::api::display::{handle_display, handle_image};
-use crate::api::setup::{handle_setup, handle_setup_image};
+use crate::api::display::preview::{preview_handler, preview_websocket_handler};
+use crate::api::display::{display_handler, image_handler};
+use crate::api::setup::{setup_handler, setup_image_handler};
 use crate::display::DisplayRenderer;
 use anyhow::{Context, Error, Result};
 use axum::Router;
@@ -55,6 +56,7 @@ pub struct AppConfig {
     pub display_image_timeout: u64,
     pub templates_path: PathBuf,
     pub fonts_path: PathBuf,
+    pub default_context_path: PathBuf,
 }
 
 impl AppConfig {
@@ -184,17 +186,19 @@ pub fn app(server_config: AppServerConfig, clock: Arc<dyn Clock + Sync + Send>) 
     };
 
     let app = Router::new()
-        .route("/api/setup/", get(handle_setup))
-        .route("/api/display", get(handle_display))
-        .route("/api/log", post(handle_logs))
-        .route("/setup_image.bmp", get(handle_setup_image))
-        .route("/display/{filename}", get(handle_image))
+        .route("/api/setup/", get(setup_handler))
+        .route("/api/display", get(display_handler))
+        .route("/api/log", post(logs_handler))
+        .route("/display/preview", get(preview_handler))
+        .route("/display/preview/ws", get(preview_websocket_handler))
+        .route("/setup_image.bmp", get(setup_image_handler))
+        .route("/display/{filename}", get(image_handler))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))
         .with_state(state);
     Ok(app)
 }
 
-async fn handle_logs(input: String) -> impl IntoResponse {
+async fn logs_handler(input: String) -> impl IntoResponse {
     info!(input);
     StatusCode::NO_CONTENT
 }
@@ -234,6 +238,7 @@ mod test {
             base_url = "http://example.localhost"
             display_image_timeout = 60
             templates_path = "templates"
+            default_context_path = "templates/default.json"
             fonts_path = "fonts"
 
             [[devices]]

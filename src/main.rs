@@ -9,10 +9,13 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
 use tracing::info;
+use tracing::level_filters::LevelFilter;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt().with_env_filter("trace").init();
+    tracing_subscriber::fmt()
+        .with_max_level(LevelFilter::DEBUG)
+        .init();
 
     let server_config = AppServerConfig {
         listen: env::args()

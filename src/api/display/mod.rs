@@ -1,3 +1,5 @@
+pub mod preview;
+
 use crate::api::{AppError, AppState};
 use crate::display::generate_filename;
 use crate::dto::{ApiDisplayResponse, SpecialFunction};
@@ -8,8 +10,9 @@ use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, HeaderValue, header};
 use axum::response::{IntoResponse, Response};
-use minijinja::context;
+use serde_json::Value;
 use std::collections::HashMap;
+use std::fs;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use url::Url;
 
@@ -57,7 +60,7 @@ impl TryInto<AppDisplayRequestHeaders> for HeaderMap {
     }
 }
 
-pub async fn handle_display(
+pub async fn display_handler(
     headers: HeaderMap,
     State(app_state): State<AppState>,
 ) -> Result<Json<ApiDisplayResponse>, AppError> {
@@ -99,7 +102,7 @@ pub async fn handle_display(
     Ok(Json(resp))
 }
 
-pub async fn handle_image(
+pub async fn image_handler(
     State(app_state): State<AppState>,
     Path(filename): Path<String>,
     Query(params): Query<HashMap<String, String>>,
@@ -132,7 +135,16 @@ pub async fn handle_image(
     let device_config = app_state.get_device_config_by_friendly_id(friendly_id)?;
     let template = device_config.get_template(timestamp);
     let display_renderer = app_state.display_renderer()?;
-    let image = display_renderer.render_jinja(&template, &context! {})?;
+
+    let default_context = app_state.config()?.default_context_path;
+    let default_context: Value = fs::read_to_string(&default_context)
+        .context(format!(
+            "failed to read default context file: {:?}",
+            default_context
+        ))?
+        .into();
+
+    let image = display_renderer.render_jinja(&template, &default_context)?;
     let image = image.to_vec();
     let mut res = Body::from(image).into_response();
     res.headers_mut()

@@ -1,6 +1,9 @@
 setup_image_path = "src/display/blank.bmp"
 display_image_timeout = 60
-base_url = "https://example.com"
+base_url = "http://localhost:9080"
+templates_path = "templates"
+default_context_path = "templates/default.json"
+fonts_path = "fonts"
 
 [[devices]]
 mac_address = "DE:AD:BE:EF:B0:0B"

@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::Read;
 use tracing::info;
 
-pub async fn handle_setup_image(State(app_state): State<AppState>) -> Result<Response, AppError> {
+pub async fn setup_image_handler(State(app_state): State<AppState>) -> Result<Response, AppError> {
     let config = app_state.config()?;
     let setup_image_path = config.setup_image_path.clone();
     let mut file = File::open(setup_image_path)
@@ -28,7 +28,7 @@ pub async fn handle_setup_image(State(app_state): State<AppState>) -> Result<Res
     Ok(res)
 }
 
-pub async fn handle_setup(
+pub async fn setup_handler(
     headers: HeaderMap,
     State(app_state): State<AppState>,
 ) -> Result<Json<ApiSetupResponse>, AppError> {
