@@ -21,8 +21,9 @@ use std::ops::DerefMut;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
+use futures_util::future::err;
 use tokio::sync::Mutex;
-use tokio::sync::broadcast::{Receiver, Sender};
+use tokio::sync::oneshot::Receiver;
 use tracing::error;
 use tracing::info;
 use url::Url;
@@ -74,34 +75,34 @@ pub async fn preview_websocket_handler(
         .on_upgrade(move |socket| handle_preview_websocket(socket, app_state, template)))
 }
 
-async fn read(mut receiver: SplitStream<WebSocket>, tx: Sender<bool>) {
-    tokio::spawn(async move {
-        loop {
-            match receiver.next().await {
-                Some(Ok(msg)) => {
-                    if let Message::Close(_) = msg {
-                        info!("received close message from client");
-                        tx.send(true).unwrap();
-                        return;
-                    }
-                }
-                Some(Err(e)) => {
-                    error!("failed to receive message: {}", e);
-                }
-                None => {
-                    error!("receiver finished on ws");
-                    return;
-                }
-            }
-        }
-    })
-    .await
-    .unwrap();
-}
+// async fn read(mut receiver: SplitStream<WebSocket>, tx: Sender<bool>) {
+//     tokio::spawn(async move {
+//         loop {
+//             match receiver.next().await {
+//                 Some(Ok(msg)) => {
+//                     if let Message::Close(_) = msg {
+//                         info!("received close message from client");
+//                         tx.send(true).unwrap();
+//                         return;
+//                     }
+//                 }
+//                 Some(Err(e)) => {
+//                     error!("failed to receive message: {}", e);
+//                 }
+//                 None => {
+//                     error!("receiver finished on ws");
+//                     return;
+//                 }
+//             }
+//         }
+//     })
+//     .await
+//     .unwrap();
+// }
 
 async fn auto_generate(
-    tx_websocket: Arc<Mutex<SplitSink<WebSocket, Message>>>,
-    cancel_rx: Arc<Mutex<Receiver<bool>>>,
+    mut tx_websocket: SplitSink<WebSocket, Message>,
+    mut cancel_rx: Receiver<bool>,
     template: &str,
     app_state: AppState,
 ) {
@@ -124,7 +125,6 @@ async fn auto_generate(
     info!("Watching files for changes...");
     let template = template.to_string();
     tokio::spawn(async move {
-        let mut cancel_rx = cancel_rx.lock().await;
         let async_rx = stream! {
             while let Ok(value) = rx.recv() {
                 yield value;
@@ -134,7 +134,7 @@ async fn auto_generate(
         let mut last_generate = SystemTime::now();
         loop {
             tokio::select! {
-                _ = cancel_rx.recv() => {
+                _ = &mut cancel_rx => {
                     break;
                 }
                 event = async_rx.next() => {
@@ -148,7 +148,7 @@ async fn auto_generate(
                                 continue;
                             }
                             last_generate = SystemTime::now();
-                            generate(tx_websocket.lock().await.deref_mut(), &template, &app_state).await;
+                            generate(&mut tx_websocket, &template, &app_state).await;
                         }
                         _ => {}
                     }
@@ -185,31 +185,58 @@ async fn generate(
 }
 
 async fn handle_preview_websocket(socket: WebSocket, app_state: AppState, template: String) {
-    let (sender, receiver) = socket.split();
-    let sender = Arc::new(Mutex::new(sender));
-    let (tx, mut rx1) = tokio::sync::broadcast::channel(1);
-    let rx2: Receiver<bool> = tx.subscribe();
+    let (ws_tx, mut ws_rx) = socket.split();
+    let ws_tx = Arc::new(Mutex::new(ws_tx));
+    let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<bool>();
+    // let cancel_rx2: Receiver<bool> = cancel_tx.subscribe();
 
-    let ping_sender = sender.clone();
+    // tokio::spawn(async move {
+    //     loop {
+    //         match receiver.next().await {
+    //             Some(Ok(msg)) => {
+    //                 if let Message::Close(_) = msg {
+    //                     info!("received close message from client");
+    //                     tx.send(true).unwrap();
+    //                     return;
+    //                 }
+    //             }
+    //             Some(Err(e)) => {
+    //                 error!("failed to receive message: {}", e);
+    //             }
+    //             None => {
+    //                 error!("receiver finished on ws");
+    //                 return;
+    //             }
+    //         }
+    //     }
+    // })
+    //     .await
+    //     .unwrap();
+    // let ping_sender = ws_tx.clone();
     let ping_interval = async move {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(Duration::from_secs(1));
             loop {
                 tokio::select! {
-                    m = rx1.recv() => {
-                        match m {
-                            Ok(i) => {
-                                info!(i);
+                    msg = ws_rx.next() => {
+                        match msg {
+                            Some(Ok(Message::Close(_))) => {
+                                info!("received close message");
+                                cancel_tx.send(true).unwrap();
+                                break;
                             }
-                            Err(i) => {
-                                info!("111{:?}", i);
+                            Some(Ok(_)) => {}
+                            Some(Err(e)) => {
+                                error!("failed to receive message: {}", e);
                             }
-                        }
-                        info!("received close message");
-                        break;
+                            None => {
+                                info!("receiver finished on ws");
+                                break;
+                            }
+                        };
                     }
                     _ = interval.tick() => {
-                        if let Err(e) = ping_sender.lock().await.deref_mut().send(Ping("ping".into())).await {
+                        if let Err(e) = ws_tx.lock().await.deref_mut().send(Ping("ping".into())).await {
                             error!("failed to send ping: {}", e);
                         }
                     }
@@ -218,21 +245,21 @@ async fn handle_preview_websocket(socket: WebSocket, app_state: AppState, templa
         });
     };
 
-    let generate_sender = sender.clone();
+    // let generate_sender = ws_tx2.clone();
+    let mut ws_tx = ws_tx.lock().await;
     generate(
-        generate_sender.clone().lock().await.deref_mut(),
+        &mut ws_tx,
         &template,
         &app_state,
     )
     .await;
 
-    let auto_generate_sender = sender.clone();
     tokio::join!(
         ping_interval,
-        read(receiver, tx),
+        // read(ws_rx, cancel_tx),
         auto_generate(
-            auto_generate_sender,
-            Arc::new(Mutex::new(rx2)),
+            &mut ws_tx,
+            cancel_rx,
             &template,
             app_state
         )
