@@ -5,26 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Image Viewer</title>
     <style>
+
         body {
+            font-family: sans-serif;
+            margin: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-            font-family: Arial, sans-serif;
         }
-
-        #connectionForm {
-            margin-bottom: 20px;
+        label {
+            margin-bottom: 8px;
+            font-weight: bold;
         }
-
-        #imageContainer {
-            border: 1px solid #ccc;
-            padding: 10px;
+        select {
+            padding: 8px;
+            margin-bottom: 15px;
+            min-width: 250px;
         }
+        #websocket-status-container {
+            margin-bottom: 15px;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            min-width: 250px;
+            text-align: center;
+        }
+        /* Status indicator styles */
+        .status-disconnected { background-color: #ffe0e0; color: #a00000; border: 1px solid #c00000; }
+        .status-connecting { background-color: #e0e0ff; color: #0000a0; border: 1px solid #0000c0; }
+        .status-connected { background-color: #e0ffe0; color: #00a000; border: 1px solid #00c000; }
+        .status-error { background-color: #fff0b3; color: #a06000; border: 1px solid #c08000; }
+        .status-message { background-color: #f0f8ff; color: #333; border: 1px solid #add8e6; }
 
-        #outputImage {
+
+        #image-display-box {
+            width: 800px;
+            height: 480px;
+            border: 2px solid #ccc;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        #image-display-box img {
             max-width: 100%;
-            height: auto;
+            max-height: 100%;
+            object-fit: contain;
         }
 
         #outputImageError {
@@ -44,20 +71,23 @@
     </style>
 </head>
 <body>
-<div id="connectionForm">
 
-    <input type="text" id="templateName" placeholder="Enter template name">
-    <br>
-    <button onclick="connectWebSocket()">Connect</button>
+<select id="templateName" name="templateName">
+    <option value="">-- Choose an Image --</option>
+    {% for path, template in templates %}
+    <option value="{{ template }}">{{ path }}</option>
+    {% endfor %}
+</select>
+
+<div id="websocket-status-container" class="status-disconnected">
+    Status: Disconnected
 </div>
-<div id="imageContainer">
-    <img id="outputImage" alt="Server Image">
+
+<div id="image-display-box">
+    <img id="outputImage" alt="Server Image" src="">
     <span id="outputImageError"></span>
 </div>
-
 <script>
-    let ws = null;
-
     function addLogEntry(log) {
         const logContainer = document.getElementById('outputImageError');
         const newEntry = document.createElement('div');
@@ -67,54 +97,104 @@
         logContainer.scrollTop = logContainer.scrollHeight;
     }
 
-    function connectWebSocket() {
+    document.addEventListener('DOMContentLoaded', function() {
+        const templateSelector = document.getElementById('templateName');
+        const websocketStatusContainer = document.getElementById('websocket-status-container');
+        const outputImage = document.getElementById('outputImage');
+        const outputImageError = document.getElementById('outputImageError');
 
-        if (ws != null && ws.readyState === WebSocket.OPEN) {
-            ws.close();
+        let currentSocket = null;
+        const WEBSOCKET_URL_BASE = `{{ websocket_url }}`;
+
+        function updateWebSocketStatus(message, statusType) {
+            const log = `Last status: ${message}`
+            addLogEntry(log);
+            websocketStatusContainer.textContent = log;
+            websocketStatusContainer.className = '';
+            websocketStatusContainer.classList.add('status-' + statusType);
         }
 
-        const templateName = document.getElementById('templateName').value;
-
-        const params = {
-            "template": templateName,
-        };
-        const queryString = new URLSearchParams(params).toString();
-        ws = new WebSocket(`{{ websocket_url }}?${queryString}`);
-
-        ws.onopen = (e) => {
-            console.log(e);
-            console.log('Connected to WebSocket');
-        };
-
-        ws.onmessage = (msg) => {
-            if (!msg.data) {
-                return;
+        function disconnectWebSocket() {
+            if (currentSocket) {
+                if (currentSocket.readyState === WebSocket.OPEN || currentSocket.readyState === WebSocket.CONNECTING) {
+                    currentSocket.close(1000, "Client initiated disconnect");
+                }
             }
-            const { status, message, image_data } = JSON.parse(msg.data);
-            const outputImage = document.getElementById('outputImage');
-            const outputImageError = document.getElementById('outputImageError');
-            switch (status) {
-                case 'ok':
-                    outputImageError.style.display = 'none';
-                    outputImage.style.display = 'block';
-                    outputImage.src = `data:image/bmp;base64,${image_data}`;
-                    break;
-                case 'error':
-                    outputImageError.style.display = 'block';
-                    outputImage.style.display = 'none';
-                    addLogEntry(message);
-                    break;
+        }
+
+        function connectWebSocket(templateName) {
+            disconnectWebSocket();
+            const params = {
+                "template": templateName,
+            };
+            const queryString = new URLSearchParams(params).toString();
+            const actualWsUrl = `${WEBSOCKET_URL_BASE}?${queryString}`;
+
+            updateWebSocketStatus(`Connecting to ${WEBSOCKET_URL_BASE}...`, "connecting");
+            currentSocket = new WebSocket(actualWsUrl);
+
+            currentSocket.onopen = function(event) {
+                updateWebSocketStatus("Connected", "connected");
+                console.log("WebSocket connection established.");
+            };
+
+            currentSocket.onmessage = function(event) {
+                if (!event.data) {
+                    return;
+                }
+
+                const { status, message, image_data } = JSON.parse(event.data);
+
+                switch (status) {
+                    case 'ok':
+                        updateWebSocketStatus("Updated", "message");
+                        outputImageError.style.display = 'none';
+                        outputImage.style.display = 'block';
+                        outputImage.src = `data:image/bmp;base64,${image_data}`;
+                        break;
+                    case 'error':
+                        updateWebSocketStatus("Rendering error", "error");
+                        outputImageError.style.display = 'block';
+                        outputImage.style.display = 'none';
+                        addLogEntry(message);
+                        break;
+                }
+            };
+
+            currentSocket.onerror = function(event) {
+                console.error("WebSocket error:", event);
+                updateWebSocketStatus("Connection Error", "error");
+            };
+
+            currentSocket.onclose = function(event) {
+                console.log(`WebSocket disconnected. Code: ${event.code}, Reason: "${event.reason}", Was Clean: ${event.wasClean}`);
+                let statusMsg = "Disconnected";
+                if (event.code !== 1000 && event.reason) { // 1000 is normal closure
+                    statusMsg += ` (Reason: ${event.reason})`;
+                } else if (event.code === 1006) {
+                    statusMsg = "Connection Aborted (1006)";
+                }
+                updateWebSocketStatus(statusMsg, "disconnected");
+            };
+        }
+        templateSelector.addEventListener('change', function() {
+
+            if (this.value) {
+                connectWebSocket(this.value);
+            } else {
+                outputImageError.style.display = 'block';
+                outputImage.style.display = 'none';
+                disconnectWebSocket();
+                updateWebSocketStatus("Disconnected", "disconnected");
             }
-        };
+        });
 
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-
-        ws.onclose = () => {
-            console.log('WebSocket connection closed');
-        };
-    }
+        if (!templateSelector.value) {
+            outputImageError.style.display = 'block';
+            outputImage.style.display = 'none';
+            updateWebSocketStatus("Disconnected", "disconnected");
+        }
+    });
 </script>
 </body>
 </html>

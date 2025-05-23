@@ -1,17 +1,21 @@
 {%- import 'components.svg.jinja' as components -%}
-{% extends "base.svg.jinja" %}
+{% extends 'base.svg.jinja' %}
 
 {% block cell_0_0 %}
     {{ components.lg_icon() }}
 {% endblock %}
 
 {% block cell_3_0 %}
-    {{ components.sm_text('&#xf076;', '54°', 'test') }}
+    {{ components.sm_text('&#xf076;', '54°', 'what') }}
 {% endblock %}
 
 {% block footer %}
     {{ super() }}
-    {% block icon %}&#xF172;{% endblock icon %}
+    {% block icon %}
+        {{ '&#xF172;' }}
+    {% endblock icon %}
     {% block primary %}{{ test }}{% endblock primary %}
-    {% block secondary %}Home{% endblock secondary %}
+    {% block secondary -%}
+       {{ 'Home' }}
+    {%- endblock secondary %}
 {% endblock footer %}

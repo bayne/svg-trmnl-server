@@ -7,6 +7,7 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use tiny_skia::Pixmap;
+use tracing::error;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 480;
@@ -18,35 +19,60 @@ const WHITE: [u8; 4] = [255, 255, 255, 255];
 const BLANK_BMP: &[u8] = include_bytes!("blank.bmp");
 const TEMPLATE_FILE_EXT: &str = "jinja";
 
+pub struct Template {
+    pub name: String,
+    pub path: PathBuf,
+    pub content: String,
+}
+
 pub struct DisplayRenderer {
-    templates: Vec<(String, String)>,
+    templates: Vec<Template>,
     fonts_path: PathBuf,
 }
 
 impl DisplayRenderer {
     pub fn new(fonts_path: PathBuf, templates_path: PathBuf) -> Result<DisplayRenderer> {
-        let mut templates = vec![];
-        for entry in std::fs::read_dir(templates_path)? {
-            let path = entry?.path();
-            let extension = path.extension().context("missing extension")?;
-            if path.is_file() && extension == TEMPLATE_FILE_EXT {
-                if let Some(file_name) = path.file_name() {
-                    let file_name = file_name.to_string_lossy().to_string();
-                    let content = read_to_string(&path)?;
-                    templates.push((file_name, content));
-                }
-            }
-        }
+        let templates = DisplayRenderer::templates(templates_path)?;
         Ok(DisplayRenderer {
             templates,
             fonts_path,
         })
     }
 
+    pub fn templates(templates_path: PathBuf) -> Result<Vec<Template>> {
+        let mut templates = vec![];
+        for entry in std::fs::read_dir(&templates_path)? {
+            let path = entry?.path();
+            let extension = path.extension().context("missing extension")?;
+            if path.is_file() && extension == TEMPLATE_FILE_EXT {
+                let content = read_to_string(&path)?;
+                let name = path
+                    .strip_prefix(&templates_path)
+                    .context("failed to strip prefix")?
+                    .to_str()
+                    .context("failed to convert path to string")?
+                    .to_string();
+                templates.push(Template {
+                    name,
+                    path,
+                    content,
+                });
+            }
+        }
+        Ok(templates)
+    }
+
     fn minijinja_env(&self) -> minijinja::Environment {
         let mut env = minijinja::Environment::new();
-        for (file_name, content) in &self.templates {
-            env.add_template(file_name, content).unwrap();
+        for Template {
+            name,
+            path,
+            content,
+        } in &self.templates
+        {
+            if let Err(e) = env.add_template(name, content) {
+                error!("failed to add template: {:?}: {}", path, e);
+            }
         }
         env
     }
