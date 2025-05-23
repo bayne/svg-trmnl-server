@@ -14,7 +14,7 @@ use futures_util::stream::{SplitSink, SplitStream, StreamExt};
 use minijinja::context;
 use notify::event::{CreateKind, ModifyKind, RemoveKind};
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use serde_json::{Value, json};
+use serde_json::{Value, json, Map};
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::ops::DerefMut;
@@ -226,12 +226,22 @@ async fn generate(
 }
 
 fn create_msg(display_renderer: &DisplayRenderer, template: &str, context: &Path) -> Value {
-    let context: Value = match read_to_string(&context) {
-        Ok(context) => context.into(),
-        Err(err) => {
+    fn get_context(context: &Path) -> anyhow::Result<Map<String, Value>> {
+        let context = read_to_string(context)
+            .context(format!("unable to read context file {:?}", context))?;
+        let context: Value = serde_json::from_str(&context)
+            .context(format!("context is not a valid json {:?}", context))?;
+        let context = context.as_object()
+            .context(format!("context is not an object, {:?}", context))?;
+        Ok(context.clone())
+    }
+    let context = match get_context(context) {
+        Ok(context) => context,
+        Err(e) => {
+            error!("failed to get context: {}", e);
             return json!({
                 "status": "error",
-                "message": format!("{:?}: {}", context, err.to_string()),
+                "message": format!("{}", e),
                 "image_data": "",
             });
         }
