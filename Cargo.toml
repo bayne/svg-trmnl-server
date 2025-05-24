@@ -1,5 +1,5 @@
 [package]
-name = "trmnl-server"
+name = "svg-trmnl-server"
 version = "0.1.0"
 edition = "2024"
 
@@ -12,12 +12,13 @@ anyhow = "1.0.98"
 axum = { version ="0.8.3", features = ["default", "macros", "ws"] }
 tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-tower-http = { version = "0.6.2", features = ["trace"] }
+tower-http = { version = "0.6.2", features = ["trace", "fs"] }
 tracing = "0.1.41"
 tower = "0.5.2"
 serde_json = "1.0.140"
 config = "0.15.11"
 chrono = "0.4.41"
+chrono-tz = "0.10.3"
 sha2 = "0.10.9"
 hex = "0.4.3"
 url = "2.5.4"
@@ -25,6 +26,7 @@ base64 = "0.22.1"
 notify = "8.0.0"
 futures-util = "0.3.31"
 async-stream = "0.3.6"
+reqwest = { version = "0.12.15", features = ["json"] }
 
 [dev-dependencies]
 axum-test = "17.3.0"

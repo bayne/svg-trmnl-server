@@ -1,19 +1,23 @@
-use crate::api::display::preview::{preview_handler, preview_websocket_handler};
+use crate::api::display::preview::{
+    preview_handler, preview_icons_handler, preview_websocket_handler,
+};
 use crate::api::display::{display_handler, image_handler};
 use crate::api::setup::{setup_handler, setup_image_handler};
+use crate::context::ContextConfig;
 use crate::display::DisplayRenderer;
 use anyhow::{Context, Error, Result};
 use axum::Router;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
-use config::Config;
+use config::{Config, Map, Value};
 use serde::Deserialize;
 use std::fmt::Formatter;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
 use tower::ServiceBuilder;
+use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
@@ -39,12 +43,20 @@ pub struct AppDeviceConfig {
     pub friendly_id: String,
     pub api_key: String,
     pub setup_expiry: String,
+    pub context: Option<Map<String, Value>>,
+    pub playlist: Vec<AppPlaylistItem>,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct AppPlaylistItem {
+    pub filename: String,
+    pub contexts: Vec<String>,
 }
 
 impl AppDeviceConfig {
-    pub fn get_template(&self, timestamp: SystemTime) -> String {
+    pub fn get_next(&self, timestamp: SystemTime) -> &AppPlaylistItem {
         info!("{:?}", timestamp);
-        "test.svg.jinja".to_string()
+        &self.playlist[0]
     }
 }
 
@@ -57,6 +69,7 @@ pub struct AppConfig {
     pub templates_path: PathBuf,
     pub fonts_path: PathBuf,
     pub default_context_path: PathBuf,
+    pub default_context: Map<String, Value>,
 }
 
 impl AppConfig {
@@ -102,6 +115,45 @@ impl AppState {
             .try_deserialize()?)
     }
 
+    pub fn get_context_config<'s, T: ContextConfig + Deserialize<'s>>(
+        &self,
+        friendly_id: &str,
+    ) -> Result<T> {
+        let name = T::name();
+        let config = self.config()?;
+        let default_context_config = config
+            .default_context
+            .get(name)
+            .context(format!("Failed to get default context config {}", name))?;
+        let device_context_config = match self
+            .get_device_config_by_friendly_id(friendly_id)
+            .context(format!("failed to device config {}", friendly_id))?
+            .context
+        {
+            Some(device_context_config) => device_context_config,
+            None => return Ok(default_context_config.clone().try_deserialize()?),
+        };
+        let context_config = match device_context_config.get(name) {
+            Some(context_config) => context_config,
+            None => return Ok(default_context_config.clone().try_deserialize()?),
+        };
+        let mut context_config = context_config
+            .clone()
+            .into_table()
+            .context("Failed to convert context config to table")?;
+
+        let default_context_config = default_context_config
+            .clone()
+            .into_table()
+            .context("Failed to convert default context config to table")?;
+        for item in default_context_config.keys() {
+            if !context_config.contains_key(item) {
+                context_config.insert(item.clone(), default_context_config[item].clone());
+            }
+        }
+        Ok(Value::from(context_config).try_deserialize()?)
+    }
+
     pub fn display_renderer(&self) -> Result<DisplayRenderer> {
         let config = self.config()?;
         Ok(DisplayRenderer::new(
@@ -123,7 +175,7 @@ impl AppState {
         let device_config = self
             .config()?
             .get_device_by_api_key(&api_key)
-            .context("Failed to get device config")?
+            .context(forbidden!("Failed to get device config"))?
             .clone();
         Ok(device_config)
     }
@@ -185,12 +237,15 @@ pub fn app(server_config: AppServerConfig, clock: Arc<dyn Clock + Sync + Send>) 
         clock,
     };
 
+    let fonts_path = state.config()?.fonts_path;
     let app = Router::new()
         .route("/api/setup/", get(setup_handler))
         .route("/api/display", get(display_handler))
         .route("/api/log", post(logs_handler))
         .route("/display/preview", get(preview_handler))
+        .route("/display/preview/icons", get(preview_icons_handler))
         .route("/display/preview/ws", get(preview_websocket_handler))
+        .nest_service("/display/fonts", ServeDir::new(fonts_path))
         .route("/setup_image.bmp", get(setup_image_handler))
         .route("/display/{filename}", get(image_handler))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))
@@ -241,17 +296,27 @@ mod test {
             default_context_path = "templates/default.json"
             fonts_path = "fonts"
 
+            [default_context]
+
             [[devices]]
             mac_address = "fake_mac_address"
             friendly_id = "fake_friendly_id"
             api_key = "fake_api_key"
             setup_expiry = "9999-01-01T00:00:00Z"
-            
+
+            [[devices.playlist]]
+            filename = "test.svg.jinja"
+            contexts = [ ]
+
             [[devices]]
             mac_address = "fake_mac_address_expired_setup"
             friendly_id = "fake_friendly_id_expired"
             api_key = "fake_api_key_expired"
             setup_expiry = "2000-01-01T00:00:00Z"
+
+            [[devices.playlist]]
+            filename = "test.svg.jinja"
+            contexts = [ ]
         "#
         )
         .expect("Failed to write config");

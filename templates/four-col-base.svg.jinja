@@ -1,0 +1,186 @@
+{%- import 'components.svg.jinja' as components -%}
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="480" viewBox="0 0 800 480" version="1.1" id="svg5"
+     xmlns="http://www.w3.org/2000/svg">
+    <style>
+        circle.guide {
+            fill: #f0f;
+            display: none;
+        }
+
+        rect.guidelines {
+            stroke: #f0f;
+            stroke-width: 2;
+            fill: none;
+            display: none;
+        }
+
+        rect.background {
+            fill: white;
+        }
+
+        text.icon {
+            font-family: "Material Symbols Outlined";
+        }
+
+        text {
+            font-family: "Roboto";
+            font-weight: lighter;
+        }
+    </style>
+    <defs>
+        {{ components.dither() }}
+        <circle class="guide" id="guide" cx="0" cy="0" r="2"/>
+    </defs>
+    <rect class="background" width="100%" height="100%"/>
+    <g transform="translate(10 10)" id="screen">
+        <g transform="translate(10 0)" id="content">
+            <g transform="translate(0 30)" id="row-0">
+                <g transform="translate(0 0)" id="cell-0-0">
+                    <use href="#guide"/>
+                    {% block cell_0_0 %}{% endblock %}
+                </g>
+                <g transform="translate(192 0)" id="cell-1-0">
+                    <use href="#guide"/>
+                    {% block cell_1_0 %}{% endblock %}
+                </g>
+                <g transform="translate(383 0)" id="cell-2-0">
+                    <use href="#guide"/>
+                    {% block cell_2_0 %}{% endblock %}
+                </g>
+                <g transform="translate(575 0)" id="cell-3-0">
+                    <use href="#guide"/>
+                    {% block cell_3_0 %}{% endblock %}
+                </g>
+            </g>
+            <g transform="translate(0 95)" id="row-1">
+                <g transform="translate(0 0)" id="cell-0-1">
+                    <use href="#guide"/>
+                    {% block cell_0_1 %}{% endblock %}
+                </g>
+                <g transform="translate(192 0)" id="cell-1-1">
+                    <use href="#guide"/>
+                    {% block cell_1_1 %}{% endblock %}
+                </g>
+                <g transform="translate(383 0)" id="cell-2-1">
+                    <use href="#guide"/>
+                    {% block cell_2_1 %}{% endblock %}
+                </g>
+                <g transform="translate(575 0)" id="cell-3-1">
+                    <use href="#guide"/>
+                    {% block cell_3_1 %}{% endblock %}
+                </g>
+            </g>
+            <g transform="translate(0 160)" id="row-2">
+                <g transform="translate(0 0)" id="cell-0-2">
+                    <use href="#guide"/>
+                    {% block cell_0_2 %}{% endblock %}
+                </g>
+                <g transform="translate(192 0)" id="cell-1-2">
+                    <use href="#guide"/>
+                    {% block cell_1_2 %}{% endblock %}
+                </g>
+                <g transform="translate(383 0)" id="cell-2-2">
+                    <use href="#guide"/>
+                    {% block cell_2_2 %}{% endblock %}
+                </g>
+                <g transform="translate(575 0)" id="cell-3-2">
+                    <use href="#guide"/>
+                    {% block cell_3_2 %}{% endblock %}
+                </g>
+            </g>
+            <g transform="translate(0 225)" id="row-3">
+                <g transform="translate(0 0)" id="cell-0-3">
+                    <use href="#guide"/>
+                    {% block cell_0_3 %}{% endblock %}
+                </g>
+                <g transform="translate(192 0)" id="cell-1-3">
+                    <use href="#guide"/>
+                    {% block cell_1_3 %}{% endblock %}
+                </g>
+                <g transform="translate(383 0)" id="cell-2-3">
+                    <use href="#guide"/>
+                    {% block cell_2_3 %}{% endblock %}
+                </g>
+                <g transform="translate(575 0)" id="cell-3-3">
+                    <use href="#guide"/>
+                    {% block cell_3_3 %}{% endblock %}
+                </g>
+            </g>
+            <g transform="translate(0 290)" id="row-4">
+                <g transform="translate(0 0)" id="cell-0-4">
+                    <use href="#guide"/>
+                    {% block cell_0_4 %}{% endblock %}
+                </g>
+                <g transform="translate(192 0)" id="cell-1-4">
+                    <use href="#guide"/>
+                    {% block cell_1_4 %}{% endblock %}
+                </g>
+                <g transform="translate(383 0)" id="cell-2-4">
+                    <use href="#guide"/>
+                    {% block cell_2_4 %}{% endblock %}
+                </g>
+                <g transform="translate(575 0)" id="cell-3-4">
+                    <use href="#guide"/>
+                    {% block cell_3_4 %}{% endblock %}
+                </g>
+            </g>
+            <g transform="translate(0 355)" id="row-5">
+                <g transform="translate(0 0)" id="cell-0-5">
+                    <use href="#guide"/>
+                    {% block cell_0_5 %}{% endblock %}
+                </g>
+                <g transform="translate(192 0)" id="cell-1-5">
+                    <use href="#guide"/>
+                    {% block cell_1_5 %}{% endblock %}
+                </g>
+                <g transform="translate(383 0)" id="cell-2-5">
+                    <use href="#guide"/>
+                    {% block cell_2_5 %}{% endblock %}
+                </g>
+                <g transform="translate(575 0)" id="cell-3-5">
+                    <use href="#guide"/>
+                    {% block cell_3_5 %}{% endblock %}
+                </g>
+            </g>
+        </g>
+        <svg x="0" y="415" width="780" height="45" viewBox="0 0 780 45"
+             class="footer">
+            <style>
+                svg.footer text.icon {
+                    paint-order: stroke;
+                    stroke: white;
+                    stroke-width: 5;
+                    font-size: 20pt;
+                }
+
+                svg.footer text {
+                    font-size: 18pt;
+                    paint-order: stroke;
+                    stroke: white;
+                    stroke-width: 5;
+                }
+
+                svg.footer text.primary {
+                }
+
+                svg.footer text.secondary {
+                    text-anchor: end;
+                }
+            </style>
+            {% block footer %}
+                <rect class="footer-background" x="0" y="0" rx="8" ry="8"
+                      width="100%" height="100%" fill="url(#dither-6)"/>
+                <text class="icon" x="8" y="36">
+                    {% block icon %}{% endblock %}
+                </text>
+                <text class="primary" x="40" y="32">
+                    {% block primary %}{% endblock %}
+                </text>
+                <text class="secondary" x="765" y="32">
+                    {% block secondary %}{% endblock %}
+                </text>
+            {% endblock footer %}
+        </svg>
+    </g>
+</svg>

@@ -1,21 +1,18 @@
 {%- import 'components.svg.jinja' as components -%}
-{% extends 'base.svg.jinja' %}
+{% extends 'four-col-base.svg.jinja' %}
 
 {% block cell_0_0 %}
-    {{ components.lg_icon() }}
+    {{ components.sm_text(icons.sunny, "Test") }}
 {% endblock %}
 
-{% block cell_3_0 %}
-    {{ components.sm_text('&#xf076;', '54°', 'what') }}
+{% block cell_3_2 %}
+    {{ components.sm_text(icons.sunny, "Test") }}
 {% endblock %}
 
 {% block footer %}
     {{ super() }}
     {% block icon %}
-        {{ '&#xF172;' }}
+        {{ icons.cloud }}
     {% endblock icon %}
-    {% block primary %}{{ test }}{% endblock primary %}
-    {% block secondary -%}
-       {{ 'Home' }}
-    {%- endblock secondary %}
+    {% block primary %}Test{% endblock primary %}
 {% endblock footer %}

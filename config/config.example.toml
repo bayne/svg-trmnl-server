@@ -5,8 +5,17 @@ templates_path = "templates"
 default_context_path = "templates/default.json"
 fonts_path = "fonts"
 
+[default_context.weather]
+latitude = 45.528744
+longitude = -122.696236
+timezone = "America/Los_Angeles"
+
 [[devices]]
 mac_address = "DE:AD:BE:EF:B0:0B"
 friendly_id = "trmnl-1"
 api_key = "fakeapikeyisfake"
 setup_expiry = "2000-01-01T00:00:00Z"
+
+[[devices.playlist]]
+filename = "weather.svg.jinja"
+contexts = [ "weather" ]

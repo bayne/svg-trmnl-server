@@ -1,4 +1,5 @@
 mod api;
+mod context;
 mod display;
 mod dto;
 
@@ -36,7 +37,6 @@ async fn main() -> Result<()> {
     let clock = Arc::new(SystemClock);
     let app = app(server_config, clock)?;
 
-    // run it
     let listener = tokio::net::TcpListener::bind(listen).await?;
     info!("listening on {}", listener.local_addr()?);
     axum::serve(listener, app).await?;

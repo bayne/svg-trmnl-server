@@ -1,18 +1,18 @@
 pub mod preview;
 
 use crate::api::{AppError, AppState};
+use crate::context::load_contexts;
 use crate::display::generate_filename;
 use crate::dto::{ApiDisplayResponse, SpecialFunction};
 use crate::{bad_request, unauthorized};
 use anyhow::Context;
-use axum::Json;
 use axum::body::Body;
 use axum::extract::{Path, Query, State};
-use axum::http::{HeaderMap, HeaderValue, header};
+use axum::http::{header, HeaderMap, HeaderValue};
 use axum::response::{IntoResponse, Response};
-use serde_json::Value;
+use axum::Json;
+use serde_json::Map;
 use std::collections::HashMap;
-use std::fs;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use url::Url;
 
@@ -133,18 +133,35 @@ pub async fn image_handler(
     }
 
     let device_config = app_state.get_device_config_by_friendly_id(friendly_id)?;
-    let template = device_config.get_template(timestamp);
+    let playlist_item = device_config.get_next(timestamp);
     let display_renderer = app_state.display_renderer()?;
+    // let first = device_config.playlist.get(0)
+    //     .context("missing first playlist item")?;
+    // let contexts = first.contexts.clone();
+    let context = load_contexts(app_state, friendly_id, playlist_item.contexts.clone()).await?;
 
-    let default_context = app_state.config()?.default_context_path;
-    let default_context: Value = fs::read_to_string(&default_context)
-        .context(format!(
-            "failed to read default context file: {:?}",
-            default_context
-        ))?
-        .into();
+    let mut result = Map::new();
+    for (k, v) in context.iter() {
+        let value = serde_json::to_string(v)
+            .context(format!("failed to serialize context value for key {}", k))?;
+        let value = serde_json::from_str(value.as_str())
+            .context(format!("failed to deserialize context value for key {}", k))?;
+        result.insert(k.clone(), value);
+    }
+    // let default_context: Map<String, Value> = {
+    //     let context = app_state.config()?.default_context;
+    //     context.into_iter()
+    //         .map(|(k, v)| (k, v.into_string().unwrap().into()))
+    //         .collect()
+    // };
+    // let default_context = app_state.config()?.default_context_path;
+    // let default_context = File::open(&default_context)
+    //     .context(format!("{:?}", default_context))?;
+    // let default_context = BufReader::new(default_context);
+    // let default_context: Map<String, Value> = serde_json::from_reader(default_context)
+    //     .context("failed to parse default context file")?;
 
-    let image = display_renderer.render_jinja(&template, &default_context)?;
+    let image = display_renderer.render_jinja(&playlist_item.filename, &result)?;
     let image = image.to_vec();
     let mut res = Body::from(image).into_response();
     res.headers_mut()

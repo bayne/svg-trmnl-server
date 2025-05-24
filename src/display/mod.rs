@@ -1,13 +1,12 @@
 use anyhow::{Context, Result};
 use resvg::usvg;
 use resvg::usvg::Transform;
-use serde::Serialize;
+use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use tiny_skia::Pixmap;
-use tracing::error;
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 480;
@@ -21,7 +20,6 @@ const TEMPLATE_FILE_EXT: &str = "jinja";
 
 pub struct Template {
     pub name: String,
-    pub path: PathBuf,
     pub content: String,
 }
 
@@ -54,7 +52,6 @@ impl DisplayRenderer {
                     .to_string();
                 templates.push(Template {
                     name,
-                    path,
                     content,
                 });
             }
@@ -62,19 +59,12 @@ impl DisplayRenderer {
         Ok(templates)
     }
 
-    fn minijinja_env(&self) -> minijinja::Environment {
+    fn minijinja_env(&self) -> Result<minijinja::Environment> {
         let mut env = minijinja::Environment::new();
-        for Template {
-            name,
-            path,
-            content,
-        } in &self.templates
-        {
-            if let Err(e) = env.add_template(name, content) {
-                error!("failed to add template: {:?}: {}", path, e);
-            }
+        for Template { name, content, .. } in &self.templates {
+            env.add_template(name, content)?;
         }
-        env
+        Ok(env)
     }
 
     fn usvg_opt(&self) -> usvg::Options {
@@ -83,9 +73,20 @@ impl DisplayRenderer {
         opt
     }
 
-    pub fn render_jinja(&self, template: &str, ctx: &impl Serialize) -> Result<DisplayImage> {
-        let env = self.minijinja_env();
+    pub fn render_jinja(&self, template: &str, ctx: &Map<String, Value>) -> Result<DisplayImage> {
+        let env = self.minijinja_env()?;
         let template = env.get_template(template)?;
+
+        let icons_context: Value = serde_json::from_str(include_str!("icons.json"))
+            .context("failed to parse icons.json")?;
+        let icons_context = icons_context
+            .as_object()
+            .context("icons.json is not an object")?
+            .to_owned();
+
+        let mut ctx = ctx.clone();
+        ctx.insert("icons".to_string(), Value::Object(icons_context));
+
         let svg = template.render(ctx)?;
 
         self.render(&svg)
@@ -146,8 +147,9 @@ mod tests {
     #[test]
     fn it_should_render_image() {
         let display_renderer = DisplayRenderer::new("fonts".into(), "templates".into()).unwrap();
+        let ctx = Map::new();
         let image = display_renderer
-            .render_jinja("test.svg.jinja", &())
+            .render_jinja("test.svg.jinja", &ctx)
             .unwrap();
         write(Path::new("test.bmp"), image).unwrap();
     }

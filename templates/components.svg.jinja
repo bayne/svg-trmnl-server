@@ -53,8 +53,8 @@
                 <rect class="sm-text-block" x="0" y="0" width="10"
                       height="100%"/>
                 <g transform="translate(20 0)">
-                    <text class="icon" x="0" y="40">{{ icon }}</text>
-                    <g transform="translate(40 0)">
+                    <text class="icon" x="0" y="45">{{ icon }}</text>
+                    <g transform="translate(45 0)">
                         <text class="primary" x="0" y="30">{{ primary }}</text>
                         <text class="secondary" x="0" y="45">{{ secondary }}</text>
                     </g>
@@ -108,6 +108,48 @@
                  class="lg-icon" id="lg-icon-t">
                 <text x="40" y="110" class="icon" font-size="170">&#xe81a;
                 </text>
+            </svg>
+        {% endmacro %}
+        {% macro tn_header(primary) %}
+            <svg x="0" y="0" width="187" height="45" viewBox="0 0 187 45"
+                 class="tn-text" id="tn-text-t"
+                 xmlns="http://www.w3.org/2000/svg">
+                <style>
+                    svg.tn-text rect.tn-text-block {
+                        rx: 3px;
+                        ry: 3px;
+                        width: 9px;
+                        height: 49px;
+                        fill: url(#dither-6);
+                        fill-opacity: 1;
+                        fill-rule: nonzero;
+                        stroke: none;
+                        stroke-width: 0;
+                        stroke-dasharray: none;
+                        paint-order: stroke markers fill;
+                    }
+
+                    svg.tn-text text.icon {
+                        font-size: 37.3333px;
+                    }
+
+                    svg.tn-text text.primary {
+                        font-size: 26.6667px;
+                        paint-order: stroke;
+                        stroke: white;
+                        stroke-width: 5;
+                    }
+
+                    svg.tn-text text.secondary {
+                        font-size: 16px;
+                    }
+                </style>
+                <rect class="tn-text-block" x="5" y="5" width="95%"
+                      rx="12" ry="12"
+                      height="95%"/>
+                <text
+                        text-anchor="middle"
+                        class="primary" x="50%" y="35">{{ primary }}</text>
             </svg>
         {% endmacro %}
     </defs>

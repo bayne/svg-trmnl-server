@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unicode Icon Grid</title>
+    <style>
+        @font-face {
+            font-family: "Material Symbols Outlined";
+            src: url("/display/fonts/MaterialSymbolsOutlined.ttf") format("truetype");
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Material Symbols Outlined", serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .icon-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .icon-card:hover {
+            transform: translateY(-5px) scale(1.05);
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            border-color: #667eea;
+        }
+
+        .icon-card:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .unicode {
+            font-size: 0.7rem;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            opacity: 0.8;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            font-weight: 500;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.3);
+            pointer-events: none;
+            animation: ripple-animation 0.6s ease-out;
+        }
+
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .search-input {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            width: 300px;
+            max-width: 90%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+                gap: 10px;
+                padding: 20px;
+            }
+
+            .icon-card {
+                padding: 15px;
+            }
+
+            .icon {
+                font-family: "Material Symbols Outlined", serif;
+                font-size: 1.5rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="search-container">
+        <input type="text" class="search-input" placeholder="Search icons..." id="searchInput">
+    </div>
+
+    <div class="grid" id="iconGrid"></div>
+</div>
+
+<div class="notification" id="notification">✓</div>
+
+<script>
+    const icons = [
+        {% for e in icons %}
+            { icon: '{{ icons[e] }}', unicode: '{{ e }}', name: '{{ e }}'},
+        {% endfor %}
+    ];
+
+    let filteredIcons = [...icons];
+
+    function createRipple(event, element) {
+        const ripple = document.createElement('span');
+        const rect = element.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        const x = event.clientX - rect.left - size / 2;
+        const y = event.clientY - rect.top - size / 2;
+
+        ripple.classList.add('ripple');
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = x + 'px';
+        ripple.style.top = y + 'px';
+
+        element.appendChild(ripple);
+
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
+    }
+
+    function showNotification() {
+        const notification = document.getElementById('notification');
+        notification.classList.add('show');
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 2000);
+    }
+
+    async function copyToClipboard(text, event, element) {
+        await navigator.clipboard.writeText(text);
+        createRipple(event, element);
+        showNotification();
+    }
+
+    function renderIcons() {
+        const grid = document.getElementById('iconGrid');
+        grid.innerHTML = '';
+
+        filteredIcons.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'icon-card';
+            card.innerHTML = `
+                    <span class="icon">${item.icon}</span>
+                    <div class="unicode">${item.unicode}</div>
+                `;
+
+            card.addEventListener('click', (e) => {
+                copyToClipboard(item.name, e, card);
+            });
+
+            grid.appendChild(card);
+        });
+    }
+
+    function filterIcons(searchTerm) {
+        filteredIcons = icons.filter(item =>
+            item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.unicode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.icon.includes(searchTerm)
+        );
+        renderIcons();
+    }
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        filterIcons(e.target.value);
+    });
+
+    // Initial render
+    renderIcons();
+</script>
+</body>
+</html>

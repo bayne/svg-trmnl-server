@@ -14,7 +14,7 @@ use futures_util::stream::{SplitSink, SplitStream, StreamExt};
 use minijinja::context;
 use notify::event::{CreateKind, ModifyKind, RemoveKind};
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
-use serde_json::{Value, json, Map};
+use serde_json::{Map, Value, json};
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::ops::DerefMut;
@@ -43,13 +43,29 @@ pub async fn preview_handler(
         .collect::<Vec<(String, String)>>();
     let result = env
         .render_str(
-            include_str!("index.html"),
+            include_str!("index.html.jinja"),
             context! {
                 websocket_url,
                 templates
             },
         )
         .context("Failed to render preview template")?;
+    Ok(Response::new(result.into()))
+}
+
+pub async fn preview_icons_handler() -> anyhow::Result<Response, AppError> {
+    let env = minijinja::Environment::new();
+    let icons: Map<String, Value> =
+        serde_json::from_str(include_str!("../../../display/icons.json"))
+            .context("could not read icons.json file")?;
+    let result = env
+        .render_str(
+            include_str!("icons.html.jinja"),
+            context! {
+                icons,
+            },
+        )
+        .context("Failed to render icons template")?;
     Ok(Response::new(result.into()))
 }
 
@@ -231,7 +247,8 @@ fn create_msg(display_renderer: &DisplayRenderer, template: &str, context: &Path
             .context(format!("unable to read context file {:?}", context))?;
         let context: Value = serde_json::from_str(&context)
             .context(format!("context is not a valid json {:?}", context))?;
-        let context = context.as_object()
+        let context = context
+            .as_object()
             .context(format!("context is not an object, {:?}", context))?;
         Ok(context.clone())
     }
