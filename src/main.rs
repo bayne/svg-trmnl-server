@@ -9,6 +9,7 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
+use tokio::signal;
 use tracing::info;
 use tracing::level_filters::LevelFilter;
 
@@ -33,12 +34,37 @@ async fn main() -> Result<()> {
         }
     }
 
+    let signal = shutdown_signal();
+
     let listen = server_config.listen.clone();
     let clock = Arc::new(SystemClock);
     let app = app(server_config, clock)?;
 
     let listener = tokio::net::TcpListener::bind(listen).await?;
     info!("listening on {}", listener.local_addr()?);
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .with_graceful_shutdown(signal)
+        .await?;
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }

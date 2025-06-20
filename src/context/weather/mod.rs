@@ -63,7 +63,7 @@ pub enum WeatherIcon {
     Cloudy,
     #[serde(rename = "foggy")]
     Foggy,
-    #[serde(rename = "rain_light")]
+    #[serde(rename = "rainy_light")]
     RainyLight,
     #[serde(rename = "rainy")]
     Rainy,

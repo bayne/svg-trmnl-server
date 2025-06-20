@@ -135,9 +135,6 @@ pub async fn image_handler(
     let device_config = app_state.get_device_config_by_friendly_id(friendly_id)?;
     let playlist_item = device_config.get_next(timestamp);
     let display_renderer = app_state.display_renderer()?;
-    // let first = device_config.playlist.get(0)
-    //     .context("missing first playlist item")?;
-    // let contexts = first.contexts.clone();
     let context = load_contexts(app_state, friendly_id, playlist_item.contexts.clone()).await?;
 
     let mut result = Map::new();
@@ -148,18 +145,6 @@ pub async fn image_handler(
             .context(format!("failed to deserialize context value for key {}", k))?;
         result.insert(k.clone(), value);
     }
-    // let default_context: Map<String, Value> = {
-    //     let context = app_state.config()?.default_context;
-    //     context.into_iter()
-    //         .map(|(k, v)| (k, v.into_string().unwrap().into()))
-    //         .collect()
-    // };
-    // let default_context = app_state.config()?.default_context_path;
-    // let default_context = File::open(&default_context)
-    //     .context(format!("{:?}", default_context))?;
-    // let default_context = BufReader::new(default_context);
-    // let default_context: Map<String, Value> = serde_json::from_reader(default_context)
-    //     .context("failed to parse default context file")?;
 
     let image = display_renderer.render_jinja(&playlist_item.filename, &result)?;
     let image = image.to_vec();

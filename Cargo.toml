@@ -2,6 +2,10 @@
 name = "svg-trmnl-server"
 version = "0.1.0"
 edition = "2024"
+license = "AGPL-3"
+description = "A file-based server for TRMNL devices that generates displays using SVG"
+homepage = "https://github.com/bayne/svg-trmnl-server"
+repository = "https://github.com/bayne/svg-trmnl-server"
 
 [dependencies]
 resvg = "0.45.1"
@@ -10,7 +14,7 @@ serde = { version = "1.0", features = ["derive"] }
 minijinja = "2.9.0"
 anyhow = "1.0.98"
 axum = { version ="0.8.3", features = ["default", "macros", "ws"] }
-tokio = { version = "1.44.2", features = ["rt-multi-thread"] }
+tokio = { version = "1.44.2", features = ["rt-multi-thread", "signal"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tower-http = { version = "0.6.2", features = ["trace", "fs"] }
 tracing = "0.1.41"
