@@ -256,8 +256,8 @@ fn parse_weather_data(now: DateTime<Tz>, data: &Value) -> anyhow::Result<Weather
         days: [
             DayWeather::from(data, "Today", HourIndexes::new(TODAY_OFFSET))?,
             DayWeather::from(data, "Tomorrow", HourIndexes::new(TOMORROW_OFFSET))?,
-            DayWeather::from(data, third_title, HourIndexes::new(third_offset))?,
-            DayWeather::from(data, fourth_title, HourIndexes::new(fourth_offset))?,
+            DayWeather::from(data, third_title, HourIndexes::new(third_offset * 24))?,
+            DayWeather::from(data, fourth_title, HourIndexes::new(fourth_offset * 24))?,
         ],
     })
 }
