@@ -97,6 +97,6 @@
     {% endblock icon %}
     {% block primary %}Now: {{ weather.current.temperature | int }}&#x00b0;{% endblock primary %}
     {% block secondary -%}
-       {{ 'Updated: ' ~ weather.time }}
+       {{ weather.time }}
     {%- endblock secondary %}
 {% endblock footer %}

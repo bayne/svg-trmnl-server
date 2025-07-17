@@ -252,7 +252,7 @@ fn parse_weather_data(now: DateTime<Tz>, data: &Value) -> anyhow::Result<Weather
 
     Ok(WeatherContext {
         current: HourWeather::current(data)?,
-        time: now.format("%b-%e %l:%M%P").to_string(),
+        time: now.format("%a, %b-%e %l%P").to_string(),
         days: [
             DayWeather::from(data, "Today", HourIndexes::new(TODAY_OFFSET))?,
             DayWeather::from(data, "Tomorrow", HourIndexes::new(TOMORROW_OFFSET))?,
