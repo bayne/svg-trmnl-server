@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: svg-trmnl-server
+  namespace: trmnl
+  labels:
+    app: svg-trmnl-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: svg-trmnl-server
+  template:
+    metadata:
+      labels:
+        app: svg-trmnl-server
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
+      containers:
+        - name: svg-trmnl-server
+          # Replace with your actual image registry path and tag.
+          # Flux ImageAutomation can manage the tag automatically (see DEPLOYMENT.md).
+          image: ghcr.io/<YOUR_ORG>/svg-trmnl-server:latest
+          imagePullPolicy: Always
+          args:
+            - "--listen=0.0.0.0:9080"
+            - "--config-path=/app/config/config.toml"
+          ports:
+            - name: http
+              containerPort: 9080
+              protocol: TCP
+
+          # Mount the ConfigMap as the runtime config file.
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+
+          livenessProbe:
+            httpGet:
+              path: /api/setup/
+              port: http
+              httpHeaders:
+                - name: FW-Version
+                  value: "0.0.0"
+                - name: ID
+                  value: "DE:AD:BE:EF:B0:0B"
+            initialDelaySeconds: 5
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /api/setup/
+              port: http
+              httpHeaders:
+                - name: FW-Version
+                  value: "0.0.0"
+                - name: ID
+                  value: "DE:AD:BE:EF:B0:0B"
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 5
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+      volumes:
+        - name: config
+          configMap:
+            name: svg-trmnl-server-config
+            items:
+              - key: config.toml
+                path: config.toml

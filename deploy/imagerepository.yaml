@@ -1,0 +1,13 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: svg-trmnl-server
+  namespace: trmnl
+spec:
+  # Replace with your container registry.
+  image: ghcr.io/<YOUR_ORG>/svg-trmnl-server
+  # How often Flux polls the registry for new tags.
+  interval: 1m0s
+  # If your registry is private, reference a Secret with registry credentials:
+  # secretRef:
+  #   name: ghcr-credentials

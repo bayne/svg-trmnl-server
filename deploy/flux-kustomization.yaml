@@ -1,0 +1,19 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: svg-trmnl-server
+  namespace: flux-system
+spec:
+  interval: 5m0s
+  path: ./deploy
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: svg-trmnl-server
+  targetNamespace: trmnl
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: svg-trmnl-server
+      namespace: trmnl
+  timeout: 2m0s

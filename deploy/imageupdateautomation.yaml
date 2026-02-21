@@ -1,0 +1,25 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: svg-trmnl-server
+  namespace: trmnl
+spec:
+  interval: 1m0s
+  sourceRef:
+    kind: GitRepository
+    name: svg-trmnl-server          # must match the GitRepository name below
+    namespace: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: Flux Bot
+        email: flux@users.noreply.github.com
+      messageTemplate: "chore: update svg-trmnl-server image to {{range .Updated.Images}}{{.}}{{end}}"
+    push:
+      branch: main
+  update:
+    strategy: Setters
+    path: ./deploy

@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: svg-trmnl-server-config
+  namespace: trmnl
+data:
+  # Edit the values below to match your environment.
+  # For sensitive values (api_key) prefer a Secret instead and reference it
+  # via an environment variable or an init-container that writes the file.
+  config.toml: |
+    setup_image_path = "src/display/blank.bmp"
+    display_image_timeout = 60
+    base_url = "http://svg-trmnl-server.trmnl.svc.cluster.local:9080"
+    templates_path = "/app/templates"
+    default_context_path = "/app/templates/default.json"
+    fonts_path = "/app/fonts"
+
+    [default_context.weather]
+    latitude = 45.528744
+    longitude = -122.696236
+    timezone = "America/Los_Angeles"
+
+    [[devices]]
+    mac_address = "DE:AD:BE:EF:B0:0B"
+    friendly_id = "trmnl-1"
+    api_key = "changeme"
+    setup_expiry = "2000-01-01T00:00:00Z"
+
+    [[devices.playlist]]
+    filename = "weather.svg.jinja"
+    contexts = [ "weather" ]

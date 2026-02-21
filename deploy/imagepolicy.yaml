@@ -1,0 +1,13 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: svg-trmnl-server
+  namespace: trmnl
+spec:
+  imageRepositoryRef:
+    name: svg-trmnl-server
+  # Semver policy: track the latest patch release on the 0.1.x line.
+  # Change to a broader range (e.g. ">=0.1.0") as the project matures.
+  policy:
+    semver:
+      range: ">=0.1.0"

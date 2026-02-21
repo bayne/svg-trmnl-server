@@ -1,0 +1,13 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: svg-trmnl-server
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  ref:
+    branch: main
+  url: https://github.com/<YOUR_ORG>/svg-trmnl-server
+  # For private repos, add:
+  # secretRef:
+  #   name: github-credentials
