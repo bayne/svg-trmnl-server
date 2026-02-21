@@ -5,6 +5,8 @@ templates_path = "templates"
 default_context_path = "templates/default.json"
 fonts_path = "fonts"
 
+[default_context]
+
 [[devices]]
 mac_address = "DE:AD:BE:EF:B0:0B"
 friendly_id = "test-device"

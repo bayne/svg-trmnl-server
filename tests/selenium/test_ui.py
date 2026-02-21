@@ -411,7 +411,11 @@ class TestIconsPage:
         search.send_keys("sun")
         time.sleep(0.3)
 
-        search.clear()
+        # clear() doesn't fire the 'input' event; use JS to clear + dispatch it
+        driver.execute_script(
+            "var el = arguments[0]; el.value = ''; el.dispatchEvent(new Event('input'));",
+            search,
+        )
         time.sleep(0.3)
 
         total_after = len(driver.find_elements(By.CSS_SELECTOR, ".icon-card"))

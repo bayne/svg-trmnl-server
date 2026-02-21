@@ -11,7 +11,7 @@ repository = "https://github.com/bayne/svg-trmnl-server"
 resvg = "0.45.1"
 tiny-skia = "0.11.4"
 serde = { version = "1.0", features = ["derive"] }
-minijinja = "2.9.0"
+minijinja = { version = "2.9.0", features = ["json"] }
 anyhow = "1.0.98"
 axum = { version ="0.8.3", features = ["default", "macros", "ws"] }
 tokio = { version = "1.44.2", features = ["rt-multi-thread", "signal"] }

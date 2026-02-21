@@ -56,7 +56,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Start svg-trmnl-server
         run: |
-          ./target/release/svg-trmnl-server --config-path config/test.toml &
+          ./target/release/svg-trmnl-server --config-path=config/test.toml &
           echo "SERVER_PID=$!" >> "$GITHUB_ENV"
 
       - name: Wait for server to be ready
@@ -81,7 +81,7 @@ jobs:
           BASE_URL: http://localhost:9080
           SCREENSHOT_DIR: screenshots
         run: |
-          pytest test_ui.py \
+          python3 -m pytest test_ui.py \
             -v \
             --tb=short \
             --html=report.html \
