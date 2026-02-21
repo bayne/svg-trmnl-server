@@ -1,0 +1,206 @@
+name: Selenium UI Tests
+
+on:
+  pull_request:
+  push:
+    branches: [master, main]
+
+jobs:
+  selenium-tests:
+    name: Selenium UI Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # -----------------------------------------------------------------------
+      # Build the Rust server
+      # -----------------------------------------------------------------------
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Cache Cargo registry and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build server
+        run: cargo build --release
+
+      # -----------------------------------------------------------------------
+      # Python + Selenium setup
+      # -----------------------------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: tests/selenium/requirements.txt
+
+      - name: Install Python dependencies
+        run: pip install -r tests/selenium/requirements.txt
+
+      # -----------------------------------------------------------------------
+      # Chrome is pre-installed on ubuntu-latest; Selenium 4.6+ uses Selenium
+      # Manager to automatically fetch the matching ChromeDriver.
+      # -----------------------------------------------------------------------
+
+      # -----------------------------------------------------------------------
+      # Start the server
+      # -----------------------------------------------------------------------
+      - name: Start svg-trmnl-server
+        run: |
+          ./target/release/svg-trmnl-server --config-path config/test.toml &
+          echo "SERVER_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for server to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:9080/admin | grep -q "200"; then
+              echo "Server is ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in 30 seconds"
+          exit 1
+
+      # -----------------------------------------------------------------------
+      # Run Selenium tests
+      # -----------------------------------------------------------------------
+      - name: Run Selenium tests
+        id: selenium
+        working-directory: tests/selenium
+        env:
+          BASE_URL: http://localhost:9080
+          SCREENSHOT_DIR: screenshots
+        run: |
+          pytest test_ui.py \
+            -v \
+            --tb=short \
+            --html=report.html \
+            --self-contained-html \
+            -p no:cacheprovider \
+            2>&1 | tee pytest_output.txt
+          echo "EXIT_CODE=${PIPESTATUS[0]}" >> "$GITHUB_ENV"
+
+      # -----------------------------------------------------------------------
+      # Stop the server
+      # -----------------------------------------------------------------------
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -n "${SERVER_PID}" ]; then
+            kill "${SERVER_PID}" 2>/dev/null || true
+          fi
+
+      # -----------------------------------------------------------------------
+      # Upload screenshots + HTML report as artifacts
+      # -----------------------------------------------------------------------
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: selenium-screenshots
+          path: tests/selenium/screenshots/
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload HTML test report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: selenium-html-report
+          path: tests/selenium/report.html
+          if-no-files-found: warn
+          retention-days: 30
+
+      # -----------------------------------------------------------------------
+      # GitHub Step Summary — visible directly in the PR "Checks" tab
+      # -----------------------------------------------------------------------
+      - name: Write job summary
+        if: always()
+        working-directory: tests/selenium
+        run: |
+          {
+            echo "## Selenium UI Test Results"
+            echo ""
+
+            # Parse passed/failed counts from pytest output
+            if [ -f pytest_output.txt ]; then
+              SUMMARY=$(grep -E "^(PASSED|FAILED|ERROR|[0-9]+ (passed|failed|error))" pytest_output.txt | tail -5 || true)
+              RESULT_LINE=$(grep -E "[0-9]+ (passed|failed)" pytest_output.txt | tail -1 || true)
+            fi
+
+            if echo "$RESULT_LINE" | grep -q "failed"; then
+              echo "> [!CAUTION]"
+              echo "> Some tests failed. See details below."
+            elif [ -n "$RESULT_LINE" ]; then
+              echo "> [!NOTE]"
+              echo "> All tests passed."
+            fi
+
+            echo ""
+            echo "### Test Output"
+            echo '```'
+            grep -E "^(PASSED|FAILED|ERROR|tests/)" pytest_output.txt 2>/dev/null || echo "(no output captured)"
+            echo '```'
+
+            if [ -n "$RESULT_LINE" ]; then
+              echo ""
+              echo "**$RESULT_LINE**"
+            fi
+
+            echo ""
+            echo "---"
+            echo ""
+            echo "### Screenshots"
+            echo ""
+            echo "Screenshots are attached as workflow artifacts:"
+            echo ""
+            echo "- **\`selenium-screenshots\`** — individual PNG files for each test"
+            echo "- **\`selenium-html-report\`** — self-contained HTML report with embedded screenshots"
+            echo ""
+            echo "Download artifacts from the **Artifacts** section of this workflow run."
+            echo ""
+            echo "> Tip: open \`report.html\` locally to view all screenshots inline."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # -----------------------------------------------------------------------
+      # Post a PR comment with a link to the screenshots (PR only)
+      # -----------------------------------------------------------------------
+      - name: Post PR comment with artifact links
+        if: github.event_name == 'pull_request' && always()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Selenium UI Test Screenshots
+
+            The Selenium test run for commit ${{ github.sha }} has completed.
+
+            | Artifact | Contents |
+            |----------|----------|
+            | [`selenium-screenshots`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) | Individual PNG screenshots for each test |
+            | [`selenium-html-report`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) | Self-contained HTML report with embedded screenshots |
+
+            Open the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) and expand the **Artifacts** section to download and view screenshots.
+
+            > **Tip:** Download `selenium-html-report` and open `report.html` in your browser to see all screenshots inline without downloading individual files.
+
+      # -----------------------------------------------------------------------
+      # Fail the job if tests failed (exit code was non-zero)
+      # -----------------------------------------------------------------------
+      - name: Check test result
+        if: always()
+        run: |
+          if [ "${EXIT_CODE}" != "0" ] && [ -n "${EXIT_CODE}" ]; then
+            echo "Selenium tests failed with exit code ${EXIT_CODE}"
+            exit "${EXIT_CODE}"
+          fi

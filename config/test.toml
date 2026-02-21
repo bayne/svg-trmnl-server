@@ -1,0 +1,16 @@
+setup_image_path = "src/display/blank.bmp"
+display_image_timeout = 60
+base_url = "http://localhost:9080"
+templates_path = "templates"
+default_context_path = "templates/default.json"
+fonts_path = "fonts"
+
+[[devices]]
+mac_address = "DE:AD:BE:EF:B0:0B"
+friendly_id = "test-device"
+api_key = "test-api-key-for-selenium-tests"
+setup_expiry = "2099-01-01T00:00:00Z"
+
+[[devices.playlist]]
+filename = "test.svg.jinja"
+contexts = []
