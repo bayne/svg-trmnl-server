@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRMNL Server Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 { margin: 0 0 24px; font-size: 1.6rem; }
+        h2 { margin: 0 0 16px; font-size: 1.2rem; }
+        .container { max-width: 960px; margin: 0 auto; }
+        .card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        th {
+            text-align: left;
+            padding: 8px 10px;
+            border-bottom: 2px solid #ddd;
+            color: #555;
+            font-weight: 600;
+        }
+        td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+        tr:last-child td { border-bottom: none; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .badge-ok { background: #d4edda; color: #155724; }
+        .badge-expired { background: #f8d7da; color: #721c24; }
+        code {
+            background: #f0f0f0;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.85rem;
+        }
+        .playlist-item {
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+        }
+        .playlist-item span { color: #777; }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+        }
+        .btn-primary { background: #0066cc; color: #fff; }
+        .btn-primary:hover { background: #0055aa; }
+        .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+        .empty { color: #999; font-style: italic; }
+
+        /* Form */
+        form .field { margin-bottom: 16px; }
+        form label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+        form input[type="text"],
+        form input[type="datetime-local"],
+        form select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        form .hint { font-size: 0.8rem; color: #777; margin-top: 3px; }
+        form .row { display: flex; gap: 12px; }
+        form .row .field { flex: 1; }
+        .api-key-row { display: flex; gap: 8px; align-items: flex-end; }
+        .api-key-row input { flex: 1; }
+        .btn-generate {
+            padding: 8px 12px;
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .btn-generate:hover { background: #ddd; }
+        .playlist-entries { margin-bottom: 8px; }
+        .playlist-entry {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: flex-start;
+        }
+        .playlist-entry select { flex: 1; }
+        .playlist-entry input { flex: 1; }
+        .playlist-entry .btn-remove {
+            padding: 8px 10px;
+            background: #fee;
+            border: 1px solid #fcc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #c00;
+        }
+        .playlist-entry .btn-remove:hover { background: #fdd; }
+        .alert {
+            padding: 10px 14px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        nav { margin-bottom: 20px; font-size: 0.9rem; }
+        nav a { color: #0066cc; text-decoration: none; }
+        nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>TRMNL Server Admin</h1>
+    <nav><a href="/admin">Devices</a> &nbsp;|&nbsp; <a href="/display/preview">Template Preview</a></nav>
+
+    {% if flash_success %}
+    <div class="alert alert-success">{{ flash_success }}</div>
+    {% endif %}
+    {% if flash_error %}
+    <div class="alert alert-error">{{ flash_error }}</div>
+    {% endif %}
+
+    <div class="card">
+        <div class="header-row">
+            <h2>Configured Devices</h2>
+            <a href="/admin/devices/new" class="btn btn-primary">+ Add Device</a>
+        </div>
+
+        {% if devices %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Friendly ID</th>
+                    <th>MAC Address</th>
+                    <th>API Key</th>
+                    <th>Setup Expiry</th>
+                    <th>Playlist</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for device in devices %}
+            <tr>
+                <td><strong>{{ device.friendly_id }}</strong></td>
+                <td><code>{{ device.mac_address }}</code></td>
+                <td><code>{{ device.api_key }}</code></td>
+                <td>
+                    {% if device.setup_expired %}
+                    <span class="badge badge-expired">Expired</span>
+                    {% else %}
+                    <span class="badge badge-ok">Active</span>
+                    {% endif %}
+                    <br><small style="color:#777">{{ device.setup_expiry }}</small>
+                </td>
+                <td>
+                    {% for item in device.playlist %}
+                    <div class="playlist-item">
+                        {{ item.filename }}
+                        {% if item.contexts %}
+                        <span>[{{ item.contexts | join(", ") }}]</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    {% if not device.playlist %}
+                    <span class="empty">none</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="empty">No devices configured yet. <a href="/admin/devices/new">Add your first device.</a></p>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>

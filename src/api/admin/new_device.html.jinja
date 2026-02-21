@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Device - TRMNL Server Admin</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        h1 { margin: 0 0 8px; font-size: 1.6rem; }
+        h2 { margin: 0 0 16px; font-size: 1.2rem; }
+        .container { max-width: 680px; margin: 0 auto; }
+        .card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .field { margin-bottom: 18px; }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+        input[type="text"],
+        input[type="datetime-local"],
+        select {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .hint { font-size: 0.8rem; color: #777; margin-top: 4px; }
+        .row { display: flex; gap: 12px; }
+        .row .field { flex: 1; }
+        .api-key-row { display: flex; gap: 8px; align-items: flex-end; }
+        .api-key-row input { flex: 1; }
+        .btn-generate {
+            padding: 9px 12px;
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .btn-generate:hover { background: #ddd; }
+        .playlist-section { margin-bottom: 18px; }
+        .playlist-section h3 { margin: 0 0 10px; font-size: 1rem; }
+        .playlist-entries { margin-bottom: 10px; }
+        .playlist-entry {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: flex-start;
+            background: #fafafa;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .playlist-entry-fields { flex: 1; }
+        .playlist-entry-fields label { font-weight: normal; font-size: 0.82rem; color: #555; }
+        .playlist-entry-fields select,
+        .playlist-entry-fields input { margin-bottom: 6px; font-size: 0.85rem; }
+        .btn-remove {
+            padding: 5px 9px;
+            background: #fee;
+            border: 1px solid #fcc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #c00;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .btn-remove:hover { background: #fdd; }
+        .btn-add-entry {
+            padding: 7px 14px;
+            background: #f0f7ff;
+            border: 1px solid #b0d0f0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #0066cc;
+        }
+        .btn-add-entry:hover { background: #e0eeff; }
+        .actions { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+        }
+        .btn-primary { background: #0066cc; color: #fff; }
+        .btn-primary:hover { background: #0055aa; }
+        .btn-secondary { background: #eee; color: #333; border: 1px solid #ccc; }
+        .btn-secondary:hover { background: #ddd; }
+        .alert {
+            padding: 10px 14px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        nav { margin-bottom: 20px; font-size: 0.9rem; }
+        nav a { color: #0066cc; text-decoration: none; }
+        nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Add New Device</h1>
+    <nav><a href="/admin">← Back to Devices</a></nav>
+
+    {% if flash_error %}
+    <div class="alert alert-error">{{ flash_error }}</div>
+    {% endif %}
+
+    <div class="card">
+        <form method="POST" action="/admin/devices" id="device-form">
+            <div class="row">
+                <div class="field">
+                    <label for="friendly_id">Friendly ID</label>
+                    <input type="text" id="friendly_id" name="friendly_id"
+                           placeholder="trmnl-1" value="{{ friendly_id }}" required>
+                    <div class="hint">Human-readable name for this device.</div>
+                </div>
+                <div class="field">
+                    <label for="mac_address">MAC Address</label>
+                    <input type="text" id="mac_address" name="mac_address"
+                           placeholder="DE:AD:BE:EF:B0:0B" value="{{ mac_address }}" required>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="api_key">API Key</label>
+                <div class="api-key-row">
+                    <input type="text" id="api_key" name="api_key"
+                           placeholder="Auto-generate or enter manually" value="{{ api_key }}" required>
+                    <button type="button" class="btn-generate" onclick="generateApiKey()">Generate</button>
+                </div>
+                <div class="hint">Secret key used by the device to authenticate.</div>
+            </div>
+
+            <div class="field">
+                <label for="setup_expiry">Setup Expiry</label>
+                <input type="datetime-local" id="setup_expiry" name="setup_expiry"
+                       value="{{ setup_expiry }}" required>
+                <div class="hint">The device can complete setup until this date/time.</div>
+            </div>
+
+            <div class="playlist-section">
+                <h3>Playlist</h3>
+                <div class="hint" style="margin-bottom:10px">Templates to display, in order. The device cycles through these.</div>
+                <div class="playlist-entries" id="playlist-entries">
+                    <!-- entries injected by JS or from re-render -->
+                </div>
+                <button type="button" class="btn-add-entry" onclick="addPlaylistEntry()">+ Add Playlist Item</button>
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn btn-primary">Save Device</button>
+                <a href="/admin" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const TEMPLATES = {{ templates | tojson }};
+
+    let entryCount = 0;
+
+    function addPlaylistEntry(filename, contexts) {
+        const container = document.getElementById('playlist-entries');
+        const idx = entryCount++;
+
+        const div = document.createElement('div');
+        div.className = 'playlist-entry';
+        div.id = `entry-${idx}`;
+
+        const options = TEMPLATES.map(t =>
+            `<option value="${escHtml(t)}"${filename === t ? ' selected' : ''}>${escHtml(t)}</option>`
+        ).join('');
+
+        div.innerHTML = `
+            <div class="playlist-entry-fields">
+                <label>Template</label>
+                <select name="playlist_filename[]">
+                    <option value="">-- Select template --</option>
+                    ${options}
+                </select>
+                <label>Contexts (comma-separated)</label>
+                <input type="text" name="playlist_contexts[]"
+                       placeholder="weather, other" value="${escHtml(contexts || '')}">
+            </div>
+            <button type="button" class="btn-remove" onclick="removeEntry('entry-${idx}')">✕</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function removeEntry(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function generateApiKey() {
+        const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let key = '';
+        for (let i = 0; i < 32; i++) {
+            key += chars[Math.floor(Math.random() * chars.length)];
+        }
+        document.getElementById('api_key').value = key;
+    }
+
+    // Set default setup_expiry to 1 year from now if empty
+    window.addEventListener('DOMContentLoaded', function() {
+        const expiry = document.getElementById('setup_expiry');
+        if (!expiry.value) {
+            const d = new Date();
+            d.setFullYear(d.getFullYear() + 1);
+            // format as YYYY-MM-DDTHH:MM
+            expiry.value = d.toISOString().slice(0, 16);
+        }
+        // Add a default playlist entry
+        addPlaylistEntry();
+    });
+</script>
+</body>
+</html>

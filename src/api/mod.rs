@@ -1,3 +1,4 @@
+use crate::api::admin::{admin_create_device_handler, admin_handler, admin_new_device_handler};
 use crate::api::display::preview::{
     preview_handler, preview_icons_handler, preview_websocket_handler,
 };
@@ -21,6 +22,7 @@ use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
+mod admin;
 mod display;
 pub(crate) mod setup;
 
@@ -248,6 +250,9 @@ pub fn app(server_config: AppServerConfig, clock: Arc<dyn Clock + Sync + Send>) 
         .nest_service("/display/fonts", ServeDir::new(fonts_path))
         .route("/setup_image.bmp", get(setup_image_handler))
         .route("/display/{filename}", get(image_handler))
+        .route("/admin", get(admin_handler))
+        .route("/admin/devices/new", get(admin_new_device_handler))
+        .route("/admin/devices", post(admin_create_device_handler))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))
         .with_state(state);
     Ok(app)
