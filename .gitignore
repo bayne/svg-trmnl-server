@@ -1,2 +1,7 @@
 target/
 config/config.toml
+__pycache__/
+*.pyc
+tests/selenium/screenshots/
+tests/selenium/report.html
+tests/selenium/.pytest_cache/
