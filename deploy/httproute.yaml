@@ -1,0 +1,24 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: svg-trmnl-server
+  namespace: trmnl
+  labels:
+    app: svg-trmnl-server
+spec:
+  parentRefs:
+    - name: svg-trmnl-server
+      namespace: trmnl
+      kind: Gateway
+  # Replace with the hostname(s) your devices and users will reach.
+  # Remove the hostnames field entirely to match all hosts on the Gateway.
+  hostnames:
+    - trmnl.example.com   # <-- replace with your actual hostname
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: svg-trmnl-server
+          port: 9080

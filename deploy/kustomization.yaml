@@ -5,6 +5,8 @@ resources:
   - configmap.yaml
   - deployment.yaml
   - service.yaml
+  - gateway.yaml
+  - httproute.yaml
   - gitrepository.yaml
   - imagerepository.yaml
   - imagepolicy.yaml

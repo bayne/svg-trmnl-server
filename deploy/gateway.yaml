@@ -1,0 +1,27 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: svg-trmnl-server
+  namespace: trmnl
+spec:
+  gatewayClassName: <YOUR_GATEWAY_CLASS>   # e.g. nginx, traefik, envoy-gateway, istio
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Same
+    # Uncomment to enable HTTPS termination at the gateway.
+    # Requires a TLS Secret named "svg-trmnl-server-tls" in the trmnl namespace.
+    # - name: https
+    #   protocol: HTTPS
+    #   port: 443
+    #   tls:
+    #     mode: Terminate
+    #     certificateRefs:
+    #       - name: svg-trmnl-server-tls
+    #         kind: Secret
+    #   allowedRoutes:
+    #     namespaces:
+    #       from: Same
